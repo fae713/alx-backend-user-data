@@ -5,9 +5,6 @@ A module for encrypting passwords using bcrypt.
 import bcrypt
 
 
-SALT_ROUNDS = 12  # Default to 12 rounds.
-
-
 def hash_password(password: str) -> bytes:
     """
     Hashes a password using a random salt with a specified number of rounds.
@@ -28,7 +25,7 @@ def hash_password(password: str) -> bytes:
         raise ValueError("Password cannot be empty.")
 
     return bcrypt.hashpw(
-        password.encode('utf-8'), bcrypt.gensalt(rounds=SALT_ROUNDS))
+        password.encode('utf-8'), bcrypt.gensalt())
 
 
 def is_valid_password(hashed_password: bytes, password: str) -> bool:
