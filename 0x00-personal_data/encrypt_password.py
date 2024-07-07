@@ -28,7 +28,7 @@ def hash_password(password: str) -> bytes:
         password.encode('utf-8'), bcrypt.gensalt())
 
 
-def is_valid_password(hashed_password: bytes, password: str) -> bool:
+def is_valid(hashed_password: bytes, password: str) -> bool:
     """
     Checks if a hashed password matches the given plaintext password.
 
