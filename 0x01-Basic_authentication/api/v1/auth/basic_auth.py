@@ -6,7 +6,7 @@ Basic Auth
 import base64
 from flask import request
 from models.user import User
-from typing import List, TypeVar, Tuple
+from typing import List, TypeVar, Tuple, Optional
 from .auth import Auth
 
 
@@ -86,3 +86,32 @@ class BasicAuth(Auth):
             if user.is_valid_password(user_pwd):
                 return user
         return None
+
+    def current_user(self, request=None) -> Optional[User]:
+        """
+        Retrieve the User instance for a given request.
+        """
+        if request is None:
+            return None
+
+        auth_header = self.authorization_header(request)
+        if auth_header is None:
+            return None
+
+        base64 = self.extract_base64_authorization_header(auth_header)
+        if base64 is None:
+            return None
+
+        cred = self.decode_base64_authorization_header(base64)
+        if cred is None:
+            return None
+
+        email, password = self.extract_user_credentials(cred)
+        if email is None or password is None:
+            return None
+
+        user_instance = self.user_object_from_credentials(email, password)
+        if user_instance is None:
+            return None
+
+        return user_instance
