@@ -31,9 +31,16 @@ class Auth:
         if not excluded_paths:
             return True
 
-        normalized_path = path if path.endswith('/') else f"{path}/"
+        normalized_path = path.rstrip('/')
         for excl_path in excluded_paths:
-            if normalized_path == excl_path:
+            norm_excl_path = excl_path.rstrip('/')
+
+            if norm_excl_path.endswith('*'):
+                prefix_match = norm_excl_path[:-1] == normalized_path[
+                    :len(norm_excl_path[:-1])]
+                if prefix_match:
+                    return False
+            elif normalized_path.startswith(norm_excl_path):
                 return False
         return True
 
