@@ -80,7 +80,7 @@ class BasicAuth(Auth):
         if user_pwd is None or not isinstance(user_pwd, str):
             return None
 
-        unidentified_users = User.search({"email" : user_email})
+        unidentified_users = User.search({"email": user_email})
 
         for user in unidentified_users:
             if user.is_valid_password(user_pwd):
