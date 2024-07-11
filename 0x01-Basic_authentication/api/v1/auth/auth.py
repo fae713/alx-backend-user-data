@@ -25,7 +25,17 @@ class Auth:
         """
         A method that takes care of the required auth.
         """
-        return False
+        if path is None:
+            return True
+
+        if not excluded_paths:
+            return True
+
+        normalized_path = path if path.endswith('/') else f"{path}/"
+        for excluded_path in excluded_paths:
+            if normalized_path == excluded_paths:
+                return False
+        return True
 
     def authorization_header(self, request=None) -> str:
         """
