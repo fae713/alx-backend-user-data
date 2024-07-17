@@ -2,7 +2,7 @@
 """
 DB module
 """
-from sqlalchemy import create_engine, tuple_
+from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
@@ -52,24 +52,17 @@ class DB:
 
     def find_user_by(self, **kwargs) -> User:
         """
-        Finds a user based on a set of filters.
+        This method finds a user with kwargs in the DB.
         """
-        fields = []
-        values = []
+        try:
+            result = self._session.query(
+                User).filter_by(**kwargs).one_or_none()
 
-        for key, value in kwargs.items():
-            if hasattr(User, key):
-                fields.append(key)
-                values.append(value)
-            else:
-                raise InvalidRequestError(f"Invalid field: {key}")
-
-        query = self._session.query(User)
-        for field, value in zip(fields, values):
-            query = query.filter(getattr(User, field) == value)
-
-        result = query.first()
-
-        if result is None:
-            raise NoResultFound("No user found matching the provided filters.")
-        return result
+            if result is None:
+                raise NoResultFound(f"No user found matching {kwargs}")
+            elif result is not None:
+                return result
+        except MultipleResultsFound:
+            raise NoResultFound(f"Multiple users found matching {kwargs}")
+        except InvalidRequestError as e:
+            raise InvalidRequestError(f"Invalid request: {str(e)}")
