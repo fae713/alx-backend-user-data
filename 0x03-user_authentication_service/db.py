@@ -6,6 +6,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
+from sqlalchemy.orm.exc import InvalidRequestError
 from user import User
 from user import Base
 
@@ -47,3 +49,20 @@ class DB:
             raise e
 
         return new_user
+
+    def find_user_by(self, **kwargs) -> User:
+        """
+        This method finds a user with kwargs in the DB.
+        """
+        try:
+            result = self._session.query(
+                User).filter_by(**kwargs).one_or_none()
+
+            if result is None:
+                raise NoResultFound(f"No user found matching {kwargs}")
+            elif result is not None:
+                return result
+        except MultipleResultsFound:
+            raise NoResultFound(f"Multiple users found matching {kwargs}")
+        except InvalidRequestError as e:
+            raise InvalidRequestError(f"Invalid request: {str(e)}")
