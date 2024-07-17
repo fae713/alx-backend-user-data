@@ -38,14 +38,12 @@ class DB:
         """
         new_user = User(email=email, hashed_password=hashed_password)
 
-        session = self._session
-
         try:
-            session.add(new_user)
+            self._session.add(new_user)
 
-            session.commit()
+            self._session.commit()
         except Exception as e:
-            session.rollback()
+            self._session.rollback()
             raise e
 
         return new_user
