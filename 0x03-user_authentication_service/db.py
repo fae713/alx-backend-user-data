@@ -1,37 +1,33 @@
 #!/usr/bin/env python3
+"""DB module.
 """
-DB module
-"""
-import logging
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, tuple_
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm.session import Session
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 from sqlalchemy.exc import InvalidRequestError
-from user import User
-from user import Base
+from user import Base, User
 
 
 class DB:
     """
-    DB class
+    DB class.
     """
 
     def __init__(self) -> None:
-        """Initialize a new DB instance
         """
-        self._engine = create_engine("sqlite:///a.db", echo=True)
+        Initialize a new DB instance.
+        """
+        self._engine = create_engine("sqlite:///a.db", echo=False)
         Base.metadata.drop_all(self._engine)
         Base.metadata.create_all(self._engine)
         self.__session = None
 
-        logging.getLogger(
-            'sqlalchemy.engine').setLevel(logging.WARNING)
-
     @property
     def _session(self) -> Session:
-        """Memoized session object
+        """
+        Memoized session object.
         """
         if self.__session is None:
             DBSession = sessionmaker(bind=self._engine)
@@ -42,15 +38,16 @@ class DB:
         """
         This adds a new user to the DB.
         """
-        new_user = User(email=email, hashed_password=hashed_password)
-
         try:
+            new_user = User(email=email, hashed_password=hashed_password)
+
             self._session.add(new_user)
 
             self._session.commit()
-        except Exception as e:
+
+        except Exception:
             self._session.rollback()
-            raise e
+            new_user = None
 
         return new_user
 
@@ -58,31 +55,37 @@ class DB:
         """
         This method finds a user with kwargs in the DB.
         """
-        try:
-            result = self._session.query(User).filter_by(**kwargs).one_or_none()
+        fields = []
 
-            if result is None:
-                raise NoResultFound(f"No user found matching {kwargs}")
-            elif result is not None:
-                return result
-        except NoResultFound as e:
-            raise NoResultFound(f"No user found matching {kwargs}") from e
-    
+        values = []
+
+        for key, value in kwargs.items():
+            if hasattr(User, key):
+                fields.append(getattr(User, key))
+                values.append(value)
+            else:
+                raise InvalidRequestError()
+        result = self._session.query(User).filter(
+            tuple_(*fields).in_([tuple(values)])).first()
+
+        if result is None:
+            raise NoResultFound()
+        return result
+
     def update_user(self, user_id: int, **kwargs) -> None:
         """
-        Updates a user's attributes.
+        Updates a user based on a given id.
         """
         user = self.find_user_by(id=user_id)
 
         if user is None:
-            raise ValueError(f"No user found with ID {user_id}")
-
-        # Update attributes
-        for attr_name, attr_value in kwargs.items():
-            if hasattr(User, attr_name):
-                setattr(user, attr_name, attr_value)
+            return
+        update_dbuser = {}
+        for key, value in kwargs.items():
+            if hasattr(User, key):
+                update_dbuser[getattr(User, key)] = value
             else:
-                raise ValueError(
-                    f"Invalid '{attr_name}'.")
-
+                raise ValueError()
+        self._session.query(User).filter(User.id == user_id).update(
+            update_dbuser, synchronize_session=False)
         self._session.commit()
