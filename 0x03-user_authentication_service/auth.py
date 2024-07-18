@@ -102,3 +102,35 @@ class Auth:
         This method destroys the session created for the user ID.
         """
         self._db.update_user(user_id=user_id, session_id=None)
+
+    def get_reset_password_token(self, email: str) -> str:
+        """
+        This method created a reset password token for
+        an identified user through their email.
+        """
+        try:
+            user = self._db.find_user_by(email=email)
+        except NoResultFound:
+            raise ValueError("User not found")
+
+        reset_token = str(uuid4())
+
+        self._db.update_user(user_id=user.id, reset_token=reset_token)
+
+        return reset_token
+
+    def update_password(
+            self, reset_token: str, new_password: str) -> None:
+        """
+        This metho updates the user's password using
+        the provided reset token.
+        """
+        try:
+            user = self._db.find_user_by(reset_token=reset_token)
+        except NoResultFound:
+            raise ValueError("Reset token not found")
+
+        hashed_pasword = _hash_password(new_password)
+
+        self._db.update_user(
+            user_id=user.id, hashed_pasword=hashed_pasword, reset_token=None)
